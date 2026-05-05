@@ -1,0 +1,79 @@
+{
+  "_comment": "Template de openclaw.json para Mac mini hardenado. Copiar para ~/openclaw-data/config/openclaw.json e editar os campos marcados com __PLACEHOLDER__.",
+
+  "gateway": {
+    "mode": "local",
+    "trustedProxies": [],
+    "controlUi": {
+      "allowedOrigins": [
+        "http://localhost:18789",
+        "http://127.0.0.1:18789"
+      ]
+    },
+    "auth": {
+      "mode": "token",
+      "_comment": "Gerar com: openssl rand -hex 32 — DEVE bater com OPENCLAW_GATEWAY_TOKEN do .env",
+      "token": "__REPLACE_WITH_openssl_rand_hex_32__",
+      "rateLimit": {
+        "maxAttempts": 10,
+        "windowMs": 60000,
+        "lockoutMs": 300000
+      }
+    },
+    "port": 18789,
+    "bind": "local",
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "workspace": "/home/node/.openclaw/workspace",
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-6"
+      },
+      "contextInjection": "continuation-skip",
+      "bootstrapMaxChars": 5000,
+      "bootstrapTotalMaxChars": 30000
+    }
+  },
+
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+
+  "tools": {
+    "profile": "coding"
+  },
+
+  "plugins": {
+    "entries": {
+      "anthropic":  { "enabled": true },
+      "openai":     { "enabled": true },
+      "openrouter": { "enabled": true }
+    }
+  },
+
+  "channels": {
+    "_comment": "Channels desabilitados por padrão. Habilitar APENAS com bot/conta NOVA — reusar tokens de outras instâncias quebra a outra.",
+    "telegram": {
+      "enabled": false,
+      "_botToken_comment": "Criar novo bot no @BotFather e colar aqui",
+      "botToken": "",
+      "dmPolicy": "allowlist",
+      "allowFrom": []
+    },
+    "whatsapp": {
+      "enabled": false,
+      "dmPolicy": "pairing"
+    },
+    "discord": {
+      "enabled": false,
+      "token": "",
+      "groupPolicy": "allowlist",
+      "guilds": {}
+    }
+  }
+}

@@ -1,0 +1,106 @@
+# OpenClaw Mac mini — Docker Compose hardenado
+#
+# Diferenças vs config padrão de VPS comercial:
+#   ❌ docker.sock removido        (sem container escape)
+#   ❌ /usr/bin/docker removido    (sem ferramenta de escape)
+#   ✅ bind 127.0.0.1              (não exposto na LAN)
+#   ✅ cap_drop ALL                (capabilities Linux mínimas)
+#   ✅ no-new-privileges           (sem privilege escalation)
+#   ✅ resource limits             (mem/cpu/pids cap)
+#   ✅ log rotation                (json-file 10MB×3)
+#   ✅ network nominada            (isolamento de subnet)
+#
+# Antes de subir:
+#   1. Copiar .env.example para .env e preencher tokens
+#   2. Copiar config/openclaw.json.example para ~/openclaw-data/config/openclaw.json
+#   3. Editar gateway.auth.token no openclaw.json com o MESMO valor de OPENCLAW_GATEWAY_TOKEN do .env
+
+services:
+  openclaw-gateway:
+    image: ${OPENCLAW_IMAGE:-openclaw/openclaw:latest}
+    container_name: openclaw-gateway
+    hostname: openclaw-mac
+    restart: unless-stopped
+    init: true
+
+    # ── Network: APENAS loopback do host ──
+    ports:
+      - "127.0.0.1:18789:18789"
+      - "127.0.0.1:18790:18790"
+
+    # ── Volumes: APENAS o necessário ──
+    volumes:
+      - ${HOME}/openclaw-data/config:/home/node/.openclaw
+      - ${HOME}/openclaw-data/workspace:/home/node/.openclaw/workspace
+      # ❌ NÃO montar /var/run/docker.sock (escape trivial)
+      # ❌ NÃO montar /usr/bin/docker
+      #
+      # Se precisar editar repo específico, descomentar com path explícito:
+      # - ${HOME}/projetos/repo-x:/home/node/projetos/repo-x
+
+    # ── Environment ──
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      TZ: ${OPENCLAW_TZ:-America/Sao_Paulo}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+
+    # ── Comando ──
+    command:
+      - node
+      - dist/index.js
+      - gateway
+      - --bind
+      - local              # ← bind 127.0.0.1, NÃO lan
+      - --port
+      - "18789"
+
+    # ── HARDENING ──
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN              # node escreve em volumes com UID diferente
+      - DAC_OVERRIDE       # idem
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    privileged: false
+
+    # ── Resource limits ──
+    mem_limit: 2g
+    mem_reservation: 512m
+    cpus: 2.0
+    pids_limit: 200
+
+    # ── Logging com rotação ──
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # ── Healthcheck ──
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - openclaw-net
+
+networks:
+  openclaw-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

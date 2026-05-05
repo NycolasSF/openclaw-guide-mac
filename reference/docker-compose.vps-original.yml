@@ -1,0 +1,93 @@
+# ⚠️  REFERÊNCIA EDUCACIONAL — NÃO USAR ⚠️
+#
+# Este é o docker-compose padrão de uma distribuição comercial OpenClaw em VPS.
+# Está aqui APENAS para mostrar o que o guia hardenado em ../docker-compose.yml
+# está corrigindo. NÃO use este arquivo em produção sem entender os riscos.
+#
+# Pontos vermelhos comentados em linha:
+# 1. /var/run/docker.sock montado → escape trivial pro host Docker
+# 2. /usr/bin/docker montado → reforça o escape
+# 3. --bind lan → ouve em 0.0.0.0 (toda LAN/Wi-Fi alcança)
+# 4. cap_drop ALL só no CLI, não no gateway → gateway tem caps default cheias
+# 5. Sem resource limits → fork-bomb / consumo infinito possível
+# 6. Sem log rotation → disco enche silenciosamente
+#
+# Para o setup hardenado de Mac mini, ver ../docker-compose.yml na raiz do repo.
+
+services:
+  openclaw-gateway:
+    image: ${OPENCLAW_IMAGE:-openclaw:local}
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      # ⚠️ PONTO VERMELHO #1 — escape trivial:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # ⚠️ PONTO VERMELHO #2 — reforça o escape:
+      - /usr/bin/docker:/usr/bin/docker
+    ports:
+      - 127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789}:18789
+      - 127.0.0.1:${OPENCLAW_BRIDGE_PORT:-18790}:18790
+    init: true
+    restart: unless-stopped
+    command:
+      - node
+      - dist/index.js
+      - gateway
+      - --bind
+      # ⚠️ PONTO VERMELHO #3 — bind LAN expõe na rede inteira:
+      - ${OPENCLAW_GATEWAY_BIND:-lan}
+      - --port
+      - "18789"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  openclaw-cli:
+    image: ${OPENCLAW_IMAGE:-openclaw:local}
+    network_mode: service:openclaw-gateway
+    # ⚠️ PONTO VERMELHO #4 — só o CLI tem cap_drop, gateway acima NÃO:
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      BROWSER: echo
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+    stdin_open: true
+    tty: true
+    init: true
+    entrypoint:
+      - node
+      - dist/index.js
+    depends_on:
+      - openclaw-gateway
+
+# ⚠️ PONTO VERMELHO #5 — sem mem_limit / cpus / pids_limit em nenhum service
+# ⚠️ PONTO VERMELHO #6 — sem `logging:` configurado, json-file default sem rotação

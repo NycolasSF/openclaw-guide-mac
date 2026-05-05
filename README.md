@@ -4,6 +4,25 @@
 > Objetivo: rodar OpenClaw num **Mac mini local** (Apple Silicon ou Intel) usando Docker Desktop, com **isolamento agressivo** — sem o "modo solto" que a config padrão da distribuição comercial usa em VPS.
 > Base: runtime extraído de uma instância OpenClaw já existente (persona + workspace + sessions opcionais), ou instalação limpa.
 
+## TL;DR — quero instalar agora
+
+Ver **[QUICKSTART.md](QUICKSTART.md)** (10 min, com `bash scripts/install.sh`).
+
+## Arquivos do repo
+
+| Arquivo | O que é |
+|---|---|
+| [README.md](README.md) | Guia completo (este arquivo) — modelo de ameaças, o que pode/não pode acessar, troubleshooting, rollback |
+| [QUICKSTART.md](QUICKSTART.md) | Receita de bolo de 10 minutos |
+| [docker-compose.yml](docker-compose.yml) | Compose hardenado pronto pra subir no Mac |
+| [.env.example](.env.example) | Template de variáveis (token, API keys) |
+| [config/openclaw.json.example](config/openclaw.json.example) | Template de config do gateway sanitizado |
+| [scripts/install.sh](scripts/install.sh) | Bootstrap automático |
+| [scripts/backup.sh](scripts/backup.sh) | Backup diário com retenção 14d |
+| [reference/docker-compose.vps-original.yml](reference/docker-compose.vps-original.yml) | Compose padrão de VPS comercial **com pontos vermelhos comentados** — didático, não usar em prod |
+
+---
+
 ---
 
 ## 1. Sumário Executivo
