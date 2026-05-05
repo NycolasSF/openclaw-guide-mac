@@ -1,0 +1,43 @@
+# Secrets — nunca commitar
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.crt
+secrets/
+credentials/
+
+# OpenClaw runtime / data
+openclaw-data/
+openclaw-runtime.tgz
+openclaw-runtime/
+openclaw.json
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+sessions/
+memory/
+devices/paired.json
+backups/
+
+# Docker
+docker-compose.override.yml
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
