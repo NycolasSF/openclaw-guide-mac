@@ -6,7 +6,22 @@
 
 ## TL;DR — quero instalar agora
 
-Ver **[QUICKSTART.md](QUICKSTART.md)** (10 min, com `bash scripts/install.sh`).
+Em outro Mac mini, basta:
+
+```bash
+git clone https://github.com/NycolasSF/openclaw-guide-mac.git
+cd openclaw-guide-mac
+bash scripts/install.sh
+```
+
+O `install.sh` é **one-shot** — instala Docker via brew se faltar, gera token, cria `.env` perguntando as API keys interativamente, monta `openclaw.json` sincronizado, copia a persona Claudius, sobe o container hardenado e (opcionalmente) configura backup launchd 03:00. Detalhes em [QUICKSTART.md](QUICKSTART.md).
+
+**Modo não-interativo** (CI/CD, outro agente automático):
+```bash
+NON_INTERACTIVE=1 INSTALL_DOCKER=1 ENABLE_BACKUP=1 \
+  ANTHROPIC_API_KEY=sk-ant-... \
+  bash scripts/install.sh
+```
 
 ## Arquivos do repo
 

@@ -5,47 +5,65 @@
 ## 1. Pré-requisitos
 
 - macOS 14+ (Sonoma ou superior)
-- [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/) **ou** [OrbStack](https://orbstack.dev/) **ou** [Colima](https://github.com/abiosoft/colima)
-- Homebrew (para `openssl`, opcionalmente `tailscale`, `ollama`)
+- Homebrew instalado (`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`)
+- API key da Anthropic (mínimo) — opcional: OpenAI e OpenRouter
 
-## 2. Clone o repo
+> Docker Desktop é instalado pelo `install.sh` se não estiver presente.
+
+## 2. Clone o repo + rode o instalador
 
 ```bash
 git clone https://github.com/NycolasSF/openclaw-guide-mac.git
 cd openclaw-guide-mac
-```
-
-## 3. Rode o instalador
-
-```bash
 bash scripts/install.sh
 ```
 
-O script:
-1. Verifica Docker rodando
-2. Cria `~/openclaw-data/{config,workspace,backups}` e `~/openclaw/`
-3. Copia `docker-compose.yml` hardenado para `~/openclaw/`
-4. Gera token novo (32 bytes hex) e cria `.env` com `chmod 600`
-5. Cria `openclaw.json` a partir do template, com token sincronizado
-6. Cria workspace mínimo (`AGENTS.md`, `USER.md`)
-7. `docker compose pull` + `up -d`
-8. Aguarda healthcheck
+O script faz **tudo** em uma rodada (modo interativo):
 
-## 4. Adicione suas API keys
+1. Verifica `brew` e instala `openssl` se faltar
+2. Verifica Docker. Se não tiver, pergunta se instala via `brew install --cask docker` (precisa abrir o Docker Desktop uma vez manualmente depois e rodar de novo)
+3. Cria `~/openclaw-data/{config,workspace,backups}` e `~/openclaw/`
+4. Copia `docker-compose.yml` hardenado para `~/openclaw/`
+5. Copia `backup.sh` para `~/openclaw/backup.sh`
+6. Gera token novo (32 bytes hex) e cria `.env` com chmod 600
+7. **Pergunta as API keys** (Anthropic / OpenAI / OpenRouter) e preenche o `.env`
+8. Cria `openclaw.json` a partir do template, com token sincronizado
+9. Copia persona Claudius (`PERSONA.md`, `BOOTSTRAP.md`, `MEMORY.md`, `USER.md`, `TOOLS.md`)
+10. `docker compose pull` + `up -d`
+11. Aguarda healthcheck (até 60s)
+12. **Pergunta se configura backup launchd** (03:00, retenção 14 dias)
+13. Roda validação de hardening (bind 127.0.0.1, cap_drop ALL, sem docker.sock)
+
+## 3. Modo não-interativo (CI/CD ou outro agente)
 
 ```bash
-nano ~/openclaw/.env
-# Preencher: ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY
-docker compose -f ~/openclaw/docker-compose.yml restart
+NON_INTERACTIVE=1 \
+INSTALL_DOCKER=1 \
+ENABLE_BACKUP=1 \
+ANTHROPIC_API_KEY=sk-ant-xxxxx \
+OPENAI_API_KEY=sk-proj-xxxxx \
+OPENROUTER_API_KEY=sk-or-v1-xxxxx \
+bash scripts/install.sh
 ```
 
-## 5. Acesse a Control UI
+Variáveis aceitas:
+
+| Variável | Default | Função |
+|---|---|---|
+| `NON_INTERACTIVE` | `0` | Pula prompts (assume defaults) |
+| `INSTALL_DOCKER` | `0` | Autoriza `brew install --cask docker` se faltar |
+| `ENABLE_BACKUP` | `0` | Configura backup launchd 03:00 sem perguntar |
+| `ANTHROPIC_API_KEY` | vazio | Preenche no `.env` |
+| `OPENAI_API_KEY` | vazio | Preenche no `.env` |
+| `OPENROUTER_API_KEY` | vazio | Preenche no `.env` |
+
+## 4. Acesse a Control UI
 
 ```bash
 open http://127.0.0.1:18789
 ```
 
-Autentique com o token (mesmo valor de `OPENCLAW_GATEWAY_TOKEN` em `.env`).
+Autentique com o token (mesmo valor de `OPENCLAW_GATEWAY_TOKEN` em `~/openclaw/.env`).
 
 ## 6. (Opcional) Trazer persona/sessions de outra instância
 
