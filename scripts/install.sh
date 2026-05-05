@@ -99,21 +99,23 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────
-# Workspace bootstrap (placeholder mínimo se vazio)
+# Workspace bootstrap — copia persona Claudius se disponível, senão placeholder
 # ─────────────────────────────────────────────────────────
-if [[ ! -f "$HOME/openclaw-data/workspace/AGENTS.md" ]]; then
-  log "Criando workspace bootstrap mínimo..."
-  cat > "$HOME/openclaw-data/workspace/AGENTS.md" <<'EOF'
-# Agentes
-
-> Edite este arquivo com a definição dos agentes do seu setup.
-EOF
-  cat > "$HOME/openclaw-data/workspace/USER.md" <<'EOF'
+if [[ ! -f "$HOME/openclaw-data/workspace/PERSONA.md" ]]; then
+  if [[ -d "$SCRIPT_DIR/agent/workspace" ]]; then
+    log "Copiando persona Claudius para ~/openclaw-data/workspace/..."
+    cp "$SCRIPT_DIR/agent/workspace/"*.md "$HOME/openclaw-data/workspace/"
+    ok "Persona Claudius instalada (PERSONA, BOOTSTRAP, MEMORY, USER, TOOLS)"
+    warn "Edite USER.md e MEMORY.md com seus dados antes de operar (ver agent/README.md)"
+  else
+    log "Criando workspace placeholder mínimo..."
+    cat > "$HOME/openclaw-data/workspace/USER.md" <<'EOF'
 # Usuário
 
 > Quem você é, suas preferências e contexto. Será injetado no início de cada sessão.
 EOF
-  ok "Workspace mínimo criado em ~/openclaw-data/workspace/"
+    ok "Workspace mínimo criado em ~/openclaw-data/workspace/"
+  fi
 fi
 
 # ─────────────────────────────────────────────────────────
